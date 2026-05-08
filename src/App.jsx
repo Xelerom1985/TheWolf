@@ -15,6 +15,7 @@ export default function App() {
   const [authed, setAuthed] = useState(false)
   const [novedades, setNovedades] = useState([])
   const [turnos, setTurnos] = useState([])
+  const [config, setConfig] = useState(null)
 
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW()
 
@@ -36,7 +37,10 @@ export default function App() {
       const d = snap.val() || {}
       setTurnos(Object.entries(d).map(([id, v]) => ({ id, ...v })))
     })
-    return () => { u1(); u2() }
+    const u3 = onValue(ref(db, 'config'), snap => {
+      setConfig(snap.val() || {})
+    })
+    return () => { u1(); u2(); u3() }
   }, [])
 
   const handleLogin = (permanent) => {
@@ -59,14 +63,12 @@ export default function App() {
         <Home novedades={novedades} onSacarTurno={() => setPage('turnos')} />
       )}
       {page === 'turnos' && (
-        <Turnos onBack={() => setPage('home')} />
+        <Turnos onBack={() => setPage('home')} turnos={turnos} config={config} />
       )}
       {page === 'misturno' && (
-        <MisTurnos turnos={turnos} />
+        <MisTurnos turnos={turnos} config={config} />
       )}
-      {page === 'admin' && authed && (
-        <Admin />
-      )}
+      {page === 'admin' && authed && <Admin />}
       {page === 'admin' && !authed && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
           <p style={{ color: 'rgba(245,230,200,0.4)', fontFamily: 'Oswald, sans-serif' }}>

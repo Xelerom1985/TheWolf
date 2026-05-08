@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { db } from '../firebase'
 import { ref, remove, update } from 'firebase/database'
+import { getSlotsForDate as getBaseSlots } from '../utils/horarios'
 
 const PELUQUERO_LABEL = { jorge: 'Jorge', daniela: 'Daniela' }
 const SERVICIO_LABEL = { corte: 'Corte', barba: 'Barba', corte_barba: 'Corte + Barba' }
@@ -11,14 +12,6 @@ const SERVICIOS = [
   { id: 'corte_barba', label: 'Corte + Barba' },
 ]
 
-function getTimeSlots() {
-  const slots = []
-  for (let h = 9; h < 19; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`)
-    slots.push(`${String(h).padStart(2, '0')}:30`)
-  }
-  return slots
-}
 
 function formatDate(dateStr) {
   if (!dateStr) return ''
@@ -29,7 +22,7 @@ function formatDate(dateStr) {
   return `${days[date.getDay()]} ${d} ${months[Number(m) - 1]}`
 }
 
-export default function MisTurnos({ turnos }) {
+export default function MisTurnos({ turnos, config }) {
   const user = JSON.parse(localStorage.getItem('wolfUser') || 'null')
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
@@ -67,8 +60,9 @@ export default function MisTurnos({ turnos }) {
 
   // Calcular disponibilidad de slots para fecha dada (excluyendo el turno que se edita)
   const getSlotsForDate = (fecha) => {
+    const base = getBaseSlots(fecha, config)
     const turnosDia = turnos.filter(t => t.fecha === fecha && t.id !== editingId)
-    return getTimeSlots().map(hora => {
+    return base.map(hora => {
       const at = turnosDia.filter(t => t.hora === hora)
       return {
         hora,

@@ -5,12 +5,14 @@ import AdminCalendario from '../admin/AdminCalendario'
 import AdminClientes from '../admin/AdminClientes'
 import AdminNuevoTurno from '../admin/AdminNuevoTurno'
 import AdminNovedades from '../admin/AdminNovedades'
+import AdminHorarios from '../admin/AdminHorarios'
 
 const TABS = [
   { id: 'calendario', label: '📅 Turnos' },
   { id: 'clientes', label: '👤 Clientes' },
   { id: 'nuevo', label: '➕ Nuevo' },
   { id: 'novedades', label: '📢 Novedades' },
+  { id: 'horarios', label: '🕐 Horarios' },
 ]
 
 export default function Admin() {
@@ -37,14 +39,12 @@ export default function Admin() {
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 80 }}>
-      {/* Header */}
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid rgba(201,168,76,0.15)', textAlign: 'center' }}>
         <h2 style={{ color: '#c9a84c', margin: 0, fontSize: 20, fontFamily: 'Playfair Display, serif' }}>
           Panel Admin
         </h2>
       </div>
 
-      {/* Tabs */}
       <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid rgba(201,168,76,0.15)', padding: '0 8px' }}>
         {TABS.map(t => (
           <button
@@ -75,6 +75,7 @@ export default function Admin() {
         {tab === 'clientes' && <AdminClientes clientes={clientes} />}
         {tab === 'nuevo' && <AdminNuevoTurno clientes={clientes} turnos={turnos} />}
         {tab === 'novedades' && <AdminNovedades novedades={novedades} />}
+        {tab === 'horarios' && <AdminHorarios />}
       </div>
     </div>
   )

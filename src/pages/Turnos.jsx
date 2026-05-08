@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { db } from '../firebase'
-import { ref, onValue, push, set } from 'firebase/database'
+import { ref, push, set } from 'firebase/database'
+import { getSlotsForDate, isDayClosed, hasSpecialHours } from '../utils/horarios'
 
 const PELUQUEROS = ['jorge', 'daniela']
 const PELUQUERO_LABEL = { jorge: 'Jorge', daniela: 'Daniela' }
@@ -9,15 +10,6 @@ const SERVICIOS = [
   { id: 'barba', label: 'Barba', dur: '~20 min' },
   { id: 'corte_barba', label: 'Corte + Barba', dur: '~50 min' },
 ]
-
-function getTimeSlots() {
-  const slots = []
-  for (let h = 9; h < 19; h++) {
-    slots.push(`${String(h).padStart(2, '0')}:00`)
-    slots.push(`${String(h).padStart(2, '0')}:30`)
-  }
-  return slots
-}
 
 function formatDateDisplay(dateStr) {
   if (!dateStr) return ''
@@ -28,13 +20,12 @@ function formatDateDisplay(dateStr) {
   return `${days[date.getDay()]} ${d} ${months[Number(m) - 1]}`
 }
 
-export default function Turnos({ onBack }) {
+export default function Turnos({ onBack, turnos, config }) {
   const [step, setStep] = useState(1)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedHora, setSelectedHora] = useState(null)
   const [selectedPeluquero, setSelectedPeluquero] = useState(null)
   const [selectedServicio, setSelectedServicio] = useState(null)
-  const [turnos, setTurnos] = useState([])
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
   const [regNombre, setRegNombre] = useState('')
@@ -42,16 +33,11 @@ export default function Turnos({ onBack }) {
 
   const user = JSON.parse(localStorage.getItem('wolfUser') || 'null')
 
-  useEffect(() => {
-    return onValue(ref(db, 'turnos'), snap => {
-      const data = snap.val() || {}
-      setTurnos(Object.entries(data).map(([id, v]) => ({ id, ...v })))
-    })
-  }, [])
-
   const turnosDelDia = turnos.filter(t => t.fecha === selectedDate)
 
-  const slotAvailability = getTimeSlots().map(hora => {
+  const baseSlots = getSlotsForDate(selectedDate || '', config)
+
+  const slotAvailability = baseSlots.map(hora => {
     const at = turnosDelDia.filter(t => t.hora === hora)
     return {
       hora,
@@ -61,7 +47,8 @@ export default function Turnos({ onBack }) {
     }
   })
 
-  const getAvail = (hora) => slotAvailability.find(s => s.hora === hora) || { jorgeLibre: true, danielaLibre: true }
+  const getAvail = (hora) =>
+    slotAvailability.find(s => s.hora === hora) || { jorgeLibre: true, danielaLibre: true }
 
   const handleConfirm = async () => {
     const currentUser = user || (regNombre && regTel ? { nombre: regNombre, tel: regTel } : null)
@@ -120,7 +107,7 @@ export default function Turnos({ onBack }) {
             </div>
           ))}
         </div>
-        <button onClick={onBack} style={btnGoldStyle({ marginTop: 24, padding: '12px 40px', borderRadius: 10 })}>
+        <button onClick={onBack} style={{ ...btnGold, marginTop: 24, padding: '12px 40px', borderRadius: 10 }}>
           Volver al inicio
         </button>
       </div>
@@ -131,7 +118,6 @@ export default function Turnos({ onBack }) {
 
   return (
     <div style={{ minHeight: '100vh', paddingBottom: 24 }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: '1px solid rgba(201,168,76,0.15)' }}>
         <button
           onClick={step > 1 ? () => setStep(s => s - 1) : onBack}
@@ -144,7 +130,6 @@ export default function Turnos({ onBack }) {
         </h2>
       </div>
 
-      {/* Progress bar */}
       <div style={{ display: 'flex', gap: 4, padding: '10px 16px 0' }}>
         {[1, 2, 3, 4, 5].map(s => (
           <div key={s} style={{ flex: 1, height: 3, borderRadius: 99, background: s <= step ? '#c9a84c' : 'rgba(201,168,76,0.2)' }} />
@@ -152,8 +137,9 @@ export default function Turnos({ onBack }) {
       </div>
 
       <div style={{ padding: '16px 16px 0' }}>
+
         {step === 1 && (
-          <CalendarPicker onSelect={date => { setSelectedDate(date); setStep(2) }} />
+          <CalendarPicker config={config} onSelect={date => { setSelectedDate(date); setStep(2) }} />
         )}
 
         {step === 2 && (
@@ -161,30 +147,32 @@ export default function Turnos({ onBack }) {
             <p style={{ fontSize: 12, color: 'rgba(245,230,200,0.5)', marginTop: 0, marginBottom: 12 }}>
               {formatDateDisplay(selectedDate)}
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-              {slotAvailability.map(({ hora, full }) => (
-                <button
-                  key={hora}
-                  disabled={full}
-                  onClick={() => { setSelectedHora(hora); setStep(3) }}
-                  style={{
-                    padding: '12px 0',
-                    borderRadius: 10,
-                    background: full ? 'rgba(255,255,255,0.04)' : 'rgba(201,168,76,0.1)',
-                    border: `1px solid ${full ? 'rgba(255,255,255,0.08)' : 'rgba(201,168,76,0.3)'}`,
-                    color: full ? 'rgba(245,230,200,0.25)' : '#f5e6c8',
-                    fontFamily: 'Oswald, sans-serif',
-                    fontWeight: 600,
-                    fontSize: 14,
-                    cursor: full ? 'not-allowed' : 'pointer',
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {hora}
-                  {full && <span style={{ display: 'block', fontSize: 10, fontWeight: 400, opacity: 0.6 }}>Completo</span>}
-                </button>
-              ))}
-            </div>
+            {slotAvailability.length === 0 ? (
+              <p style={{ color: 'rgba(245,230,200,0.4)', textAlign: 'center', marginTop: 32 }}>
+                No hay horarios disponibles este día
+              </p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {slotAvailability.map(({ hora, full }) => (
+                  <button
+                    key={hora}
+                    disabled={full}
+                    onClick={() => { setSelectedHora(hora); setStep(3) }}
+                    style={{
+                      padding: '12px 0', borderRadius: 10,
+                      background: full ? 'rgba(255,255,255,0.04)' : 'rgba(201,168,76,0.1)',
+                      border: `1px solid ${full ? 'rgba(255,255,255,0.08)' : 'rgba(201,168,76,0.3)'}`,
+                      color: full ? 'rgba(245,230,200,0.25)' : '#f5e6c8',
+                      fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 14,
+                      cursor: full ? 'not-allowed' : 'pointer', lineHeight: 1.2,
+                    }}
+                  >
+                    {hora}
+                    {full && <span style={{ display: 'block', fontSize: 10, fontWeight: 400, opacity: 0.6 }}>Completo</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -218,12 +206,8 @@ export default function Turnos({ onBack }) {
                 key={s.id}
                 onClick={() => { setSelectedServicio(s.id); setStep(5) }}
                 style={{
-                  background: '#1a1a1a',
-                  border: '1px solid rgba(201,168,76,0.3)',
-                  borderRadius: 12,
-                  padding: '16px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
+                  background: '#1a1a1a', border: '1px solid rgba(201,168,76,0.3)',
+                  borderRadius: 12, padding: '16px', textAlign: 'left', cursor: 'pointer',
                 }}
               >
                 <p style={{ margin: 0, color: '#c9a84c', fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 17 }}>{s.label}</p>
@@ -235,7 +219,6 @@ export default function Turnos({ onBack }) {
 
         {step === 5 && (
           <div>
-            {/* Resumen */}
             <div style={{ background: '#1a1a1a', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 12, padding: 16, marginBottom: 16 }}>
               <p style={{ color: '#c9a84c', fontFamily: 'Playfair Display, serif', margin: '0 0 12px', fontSize: 16 }}>Resumen</p>
               {[
@@ -251,7 +234,6 @@ export default function Turnos({ onBack }) {
               ))}
             </div>
 
-            {/* User info / registro */}
             {user ? (
               <div style={{ background: '#1a1a1a', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 10, padding: '12px 16px', marginBottom: 16 }}>
                 <p style={{ fontSize: 11, color: 'rgba(245,230,200,0.4)', margin: '0 0 4px', letterSpacing: 1 }}>TURNO A NOMBRE DE</p>
@@ -273,10 +255,7 @@ export default function Turnos({ onBack }) {
             <button
               onClick={handleConfirm}
               disabled={saving || (!user && (!regNombre || !regTel))}
-              style={{
-                ...btnGoldStyle({ padding: '16px 0', borderRadius: 12, width: '100%' }),
-                opacity: (saving || (!user && (!regNombre || !regTel))) ? 0.6 : 1,
-              }}
+              style={{ ...btnGold, width: '100%', padding: '16px 0', borderRadius: 12, opacity: (saving || (!user && (!regNombre || !regTel))) ? 0.6 : 1 }}
             >
               {saving ? 'Guardando...' : '✓ CONFIRMAR TURNO'}
             </button>
@@ -295,9 +274,7 @@ function BarberCard({ label, sub, available, onClick }) {
       style={{
         background: '#1a1a1a',
         border: `1px solid ${available ? 'rgba(201,168,76,0.3)' : 'rgba(255,255,255,0.07)'}`,
-        borderRadius: 12,
-        padding: '14px 16px',
-        textAlign: 'left',
+        borderRadius: 12, padding: '14px 16px', textAlign: 'left',
         cursor: available ? 'pointer' : 'not-allowed',
         opacity: available ? 1 : 0.4,
       }}
@@ -315,7 +292,7 @@ function BarberCard({ label, sub, available, onClick }) {
   )
 }
 
-function CalendarPicker({ onSelect }) {
+function CalendarPicker({ config, onSelect }) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
@@ -358,8 +335,10 @@ function CalendarPicker({ onSelect }) {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
           const isPast = date < today
           const isSunday = date.getDay() === 0
+          const closed = isDayClosed(dateStr, config)
+          const special = hasSpecialHours(dateStr, config)
           const isToday = date.getTime() === today.getTime()
-          const disabled = isPast || isSunday
+          const disabled = isPast || isSunday || closed
 
           return (
             <button
@@ -368,53 +347,48 @@ function CalendarPicker({ onSelect }) {
               onClick={() => onSelect(dateStr)}
               style={{
                 aspectRatio: '1/1',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 8,
-                fontSize: 13,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                borderRadius: 8, fontSize: 13,
                 fontFamily: 'Oswald, sans-serif',
                 fontWeight: isToday ? 700 : 400,
-                background: isToday ? 'rgba(201,168,76,0.2)' : 'transparent',
-                border: `1px solid ${isToday ? 'rgba(201,168,76,0.5)' : 'transparent'}`,
+                background: isToday ? 'rgba(201,168,76,0.2)' : closed ? 'rgba(248,113,113,0.08)' : 'transparent',
+                border: `1px solid ${isToday ? 'rgba(201,168,76,0.5)' : closed ? 'rgba(248,113,113,0.2)' : 'transparent'}`,
                 color: disabled ? 'rgba(245,230,200,0.18)' : '#f5e6c8',
                 cursor: disabled ? 'not-allowed' : 'pointer',
+                gap: 2,
               }}
             >
               {day}
+              {special && !disabled && (
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fbbf24' }} />
+              )}
             </button>
           )
         })}
       </div>
-      <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(245,230,200,0.3)', marginTop: 12, fontFamily: 'Oswald, sans-serif' }}>
-        Los domingos no abrimos
-      </p>
+
+      <div style={{ display: 'flex', gap: 12, marginTop: 12, justifyContent: 'center' }}>
+        <span style={{ fontSize: 10, color: 'rgba(245,230,200,0.35)', fontFamily: 'Oswald, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'rgba(248,113,113,0.4)' }} /> Cerrado
+        </span>
+        <span style={{ fontSize: 10, color: 'rgba(245,230,200,0.35)', fontFamily: 'Oswald, sans-serif', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#fbbf24' }} /> Horario especial
+        </span>
+      </div>
     </div>
   )
 }
 
 const navBtn = {
-  width: 32, height: 32,
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  borderRadius: '50%',
-  background: 'rgba(201,168,76,0.1)',
-  border: 'none',
-  color: '#c9a84c',
-  fontSize: 20,
-  cursor: 'pointer',
+  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+  borderRadius: '50%', background: 'rgba(201,168,76,0.1)', border: 'none',
+  color: '#c9a84c', fontSize: 20, cursor: 'pointer',
 }
 
-function btnGoldStyle(extra = {}) {
-  return {
-    background: 'linear-gradient(135deg,#c9a84c,#e8c97a,#c9a84c)',
-    color: '#0d0d0d',
-    fontFamily: 'Oswald, sans-serif',
-    fontWeight: 700,
-    fontSize: 15,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    border: 'none',
-    cursor: 'pointer',
-    ...extra,
-  }
+const btnGold = {
+  background: 'linear-gradient(135deg,#c9a84c,#e8c97a,#c9a84c)',
+  color: '#0d0d0d', fontFamily: 'Oswald, sans-serif', fontWeight: 700,
+  fontSize: 15, letterSpacing: 2, textTransform: 'uppercase',
+  border: 'none', cursor: 'pointer',
 }
