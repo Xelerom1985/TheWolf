@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Oswald:wght@400;500;600&family=Special+Elite&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --gold: #c9a84c;
+  --gold-light: #e8c97a;
+  --dark: #0d0d0d;
+  --dark2: #1a1a1a;
+  --dark3: #242424;
+  --cream: #f5e6c8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background-color: var(--dark);
+  color: var(--cream);
+  font-family: 'Oswald', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+#root { min-height: 100vh; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--dark2); }
+::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+/* Inputs */
+input, select, textarea {
+  background: var(--dark3) !important;
+  color: var(--cream) !important;
+  border: 1px solid rgba(201,168,76,0.3) !important;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 15px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px rgba(201,168,76,0.15);
+}
+input::placeholder { color: rgba(245,230,200,0.35) !important; }
+select option { background: var(--dark3); }
