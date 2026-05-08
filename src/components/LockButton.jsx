@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const PASS = 'wolf1234'
+const PASS = '1121'
 
 export default function LockButton({ authed, onLogin, onLogout }) {
   const [open, setOpen] = useState(false)
