@@ -38,8 +38,8 @@ export default function LockButton({ authed, onLogin, onLogout }) {
           top: 12,
           right: 12,
           zIndex: 50,
-          width: 40,
-          height: 40,
+          width: 52,
+          height: 52,
           borderRadius: '50%',
           display: 'flex',
           alignItems: 'center',
@@ -47,7 +47,7 @@ export default function LockButton({ authed, onLogin, onLogout }) {
           background: 'rgba(0,0,0,0.6)',
           border: '1px solid rgba(201,168,76,0.3)',
           cursor: 'pointer',
-          fontSize: 18,
+          fontSize: 24,
           opacity: authed ? 0.9 : 0.55,
         }}
       >
@@ -83,7 +83,9 @@ export default function LockButton({ authed, onLogin, onLogout }) {
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <input
                 type="password"
-                placeholder="Contraseña"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder="PIN"
                 value={pass}
                 onChange={e => { setPass(e.target.value); setError(false) }}
                 autoFocus

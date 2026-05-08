@@ -7,10 +7,12 @@ import AdminNuevoTurno from '../admin/AdminNuevoTurno'
 import AdminNovedades from '../admin/AdminNovedades'
 import AdminHorarios from '../admin/AdminHorarios'
 
-const TABS = [
+const TABS_ROW1 = [
   { id: 'calendario', label: '📅 Turnos' },
-  { id: 'clientes', label: '👤 Clientes' },
   { id: 'nuevo', label: '➕ Nuevo' },
+  { id: 'clientes', label: '👤 Clientes' },
+]
+const TABS_ROW2 = [
   { id: 'novedades', label: '📢 Novedades' },
   { id: 'horarios', label: '🕐 Horarios' },
 ]
@@ -45,29 +47,55 @@ export default function Admin() {
         </h2>
       </div>
 
-      <div style={{ display: 'flex', overflowX: 'auto', borderBottom: '1px solid rgba(201,168,76,0.15)', padding: '0 8px' }}>
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            style={{
-              flexShrink: 0,
-              padding: '10px 14px',
-              background: 'transparent',
-              border: 'none',
-              borderBottom: `2px solid ${tab === t.id ? '#c9a84c' : 'transparent'}`,
-              color: tab === t.id ? '#c9a84c' : 'rgba(245,230,200,0.45)',
-              fontFamily: 'Oswald, sans-serif',
-              fontSize: 13,
-              fontWeight: tab === t.id ? 600 : 400,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              transition: 'color 0.2s',
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
+      <div style={{ borderBottom: '1px solid rgba(201,168,76,0.15)' }}>
+        <div style={{ display: 'flex' }}>
+          {TABS_ROW1.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1,
+                padding: '13px 4px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: `2px solid ${tab === t.id ? '#c9a84c' : 'transparent'}`,
+                color: tab === t.id ? '#c9a84c' : 'rgba(245,230,200,0.45)',
+                fontFamily: 'Oswald, sans-serif',
+                fontSize: 14,
+                fontWeight: tab === t.id ? 600 : 400,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: 'flex', borderTop: '1px solid rgba(201,168,76,0.08)' }}>
+          {TABS_ROW2.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1,
+                padding: '13px 4px',
+                background: 'transparent',
+                border: 'none',
+                borderBottom: `2px solid ${tab === t.id ? '#c9a84c' : 'transparent'}`,
+                color: tab === t.id ? '#c9a84c' : 'rgba(245,230,200,0.45)',
+                fontFamily: 'Oswald, sans-serif',
+                fontSize: 14,
+                fontWeight: tab === t.id ? 600 : 400,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: 'color 0.2s',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div style={{ padding: '16px' }}>
